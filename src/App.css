@@ -18,8 +18,9 @@
   font-size: 1.5em;
 }
 
-.App-intro {
+.App-main {
   font-size: large;
+  height: 500px;
 }
 
 @keyframes App-logo-spin {
