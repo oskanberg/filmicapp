@@ -1,241 +1,114 @@
 
 import * as React from "react";
 
-// import './nivoline.d.ts';
-import { ResponsiveLine } from '@nivo/line';
+import './style.css';
 
-const data = [
-    {
-        "id": "japan",
-        "color": "hsl(248, 70%, 50%)",
-        "data": [
-            {
-                "x": "plane",
-                "y": 280
-            },
-            {
-                "x": "helicopter",
-                "y": 172
-            },
-            {
-                "x": "boat",
-                "y": 271
-            },
-            {
-                "x": "train",
-                "y": 238
-            },
-            {
-                "x": "subway",
-                "y": 97
-            },
-            {
-                "x": "bus",
-                "y": 189
-            },
-            {
-                "x": "car",
-                "y": 69
-            },
-            {
-                "x": "moto",
-                "y": 91
-            },
-            {
-                "x": "bicycle",
-                "y": 188
-            },
-            {
-                "x": "others",
-                "y": 51
+import { ResponsiveLine } from '@nivo/line';
+import { Query } from "react-apollo";
+import gql from "graphql-tag";
+
+const GET_DAILY_GROSS = gql`
+    query getFilm($filmID: ID!, $from: Time, $to: Time) {
+        getFilm(id: $filmID) {
+            title,
+            grossDaily(from: $from, to: $to) {
+                date
+                gross
             }
-        ]
-    },
-    {
-        "id": "france",
-        "color": "hsl(2, 70%, 50%)",
-        "data": [
-            {
-                "x": "plane",
-                "y": 60
-            },
-            {
-                "x": "helicopter",
-                "y": 242
-            },
-            {
-                "x": "boat",
-                "y": 173
-            },
-            {
-                "x": "train",
-                "y": 121
-            },
-            {
-                "x": "subway",
-                "y": 90
-            },
-            {
-                "x": "bus",
-                "y": 237
-            },
-            {
-                "x": "car",
-                "y": 158
-            },
-            {
-                "x": "moto",
-                "y": 45
-            },
-            {
-                "x": "bicycle",
-                "y": 195
-            },
-            {
-                "x": "others",
-                "y": 234
-            }
-        ]
-    },
-    {
-        "id": "us",
-        "color": "hsl(213, 70%, 50%)",
-        "data": [
-            {
-                "x": "plane",
-                "y": 105
-            },
-            {
-                "x": "helicopter",
-                "y": 14
-            },
-            {
-                "x": "boat",
-                "y": 227
-            },
-            {
-                "x": "train",
-                "y": 123
-            },
-            {
-                "x": "subway",
-                "y": 97
-            },
-            {
-                "x": "bus",
-                "y": 194
-            },
-            {
-                "x": "car",
-                "y": 187
-            },
-            {
-                "x": "moto",
-                "y": 220
-            },
-            {
-                "x": "bicycle",
-                "y": 286
-            },
-            {
-                "x": "others",
-                "y": 73
-            }
-        ]
-    },
-    {
-        "id": "germany",
-        "color": "hsl(6, 70%, 50%)",
-        "data": [
-            {
-                "x": "plane",
-                "y": 298
-            },
-            {
-                "x": "helicopter",
-                "y": 291
-            },
-            {
-                "x": "boat",
-                "y": 263
-            },
-            {
-                "x": "train",
-                "y": 257
-            },
-            {
-                "x": "subway",
-                "y": 203
-            },
-            {
-                "x": "bus",
-                "y": 159
-            },
-            {
-                "x": "car",
-                "y": 268
-            },
-            {
-                "x": "moto",
-                "y": 160
-            },
-            {
-                "x": "bicycle",
-                "y": 232
-            },
-            {
-                "x": "others",
-                "y": 66
-            }
-        ]
-    },
-    {
-        "id": "norway",
-        "color": "hsl(317, 70%, 50%)",
-        "data": [
-            {
-                "x": "plane",
-                "y": 35
-            },
-            {
-                "x": "helicopter",
-                "y": 251
-            },
-            {
-                "x": "boat",
-                "y": 14
-            },
-            {
-                "x": "train",
-                "y": 288
-            },
-            {
-                "x": "subway",
-                "y": 269
-            },
-            {
-                "x": "bus",
-                "y": 297
-            },
-            {
-                "x": "car",
-                "y": 157
-            },
-            {
-                "x": "moto",
-                "y": 182
-            },
-            {
-                "x": "bicycle",
-                "y": 85
-            },
-            {
-                "x": "others",
-                "y": 150
-            }
-        ]
+        }
     }
-];
+`;
+
+interface DailyGrossData {
+    getFilm: {
+        title: string,
+        grossDaily: Array<{
+            gross: number;
+            date: string;
+        }>
+    };
+}
+
+interface DailyGrossVariables {
+    filmID: string,
+    from: string,
+    to: string,
+}
+
+class DailyGrossQuery extends Query<DailyGrossData, DailyGrossVariables> { }
+
+interface IGrossProps {
+    filmID: string,
+    from: string,
+    to: string
+}
+
+const currencyStr = (v: number) => {
+    return v.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&,');
+};
+
+const Gross: React.StatelessComponent<IGrossProps> = ({ filmID, from, to }) => (
+    <DailyGrossQuery
+        query={GET_DAILY_GROSS}
+        variables={{
+            filmID,
+            from,
+            to
+        }}
+    >
+        {({ loading, error, data }) => {
+            if (loading) return <p>Loading...</p>;
+            if (error) return <p>Error :(</p>;
+
+            const series = data!
+                .getFilm
+                .grossDaily
+                .map(({ gross, date }) => ({
+                    x: date,
+                    y: gross,
+                }));
+            const chartData = [{
+                id: data!.getFilm.title,
+                data: series
+            }];
+            return (
+                <div className="lineContainer">
+                    <ResponsiveLine
+                        data={chartData}
+                        animate
+                        margin={{
+                            top: 80,
+                            right: 40,
+                            bottom: 80,
+                            left: 80
+                        }}
+                        xScale={{
+                            type: 'time',
+                            format: '%Y-%m-%dT%H:%M:%SZ',
+                            precision: 'day'
+                        }}
+                        yScale={{
+                            type: 'linear',
+                            stacked: false,
+                            min: 0
+                        }}
+                        axisBottom={{ format: '%b %d' }}
+                        curve="monotoneX"
+                        enableDotLabel
+                        dotLabel={e => `$${currencyStr(e.y)}`}
+                        axisLeft={{
+                            format: v => `$${currencyStr(parseInt(v))}`
+                        }}
+                        colors={["rgb(97, 205, 187)"]}
+                    />
+                </div>
+            );
+
+        }}
+    </DailyGrossQuery>
+);
+
+
 
 interface IMatchProps {
     match: {
@@ -245,85 +118,22 @@ interface IMatchProps {
     }
 }
 
+const today = new Date();
+const daysAgoISO = (num: number) => {
+    var d = new Date();
+    d.setDate(d.getDate() - num);
+    return d.toISOString();
+};
+
 export default ({ match }: IMatchProps) => {
     return (
         <div>
             <p>{match.params.id}</p>
-            <ResponsiveLine
-                data={data}
-                margin={{
-                    "top": 50,
-                    "right": 110,
-                    "bottom": 50,
-                    "left": 60
-                }}
-                xScale={{
-                    "type": "point"
-                }}
-                yScale={{
-                    "type": "linear",
-                    "stacked": true,
-                    "min": "auto",
-                    "max": "auto"
-                }}
-                minY="auto"
-                maxY="auto"
-                stacked={true}
-                axisBottom={{
-                    "orient": "bottom",
-                    "tickSize": 5,
-                    "tickPadding": 5,
-                    "tickRotation": 0,
-                    "legend": "transportation",
-                    "legendOffset": 36,
-                    "legendPosition": "center"
-                }}
-                axisLeft={{
-                    "orient": "left",
-                    "tickSize": 5,
-                    "tickPadding": 5,
-                    "tickRotation": 0,
-                    "legend": "count",
-                    "legendOffset": -40,
-                    "legendPosition": "center"
-                }}
-                dotSize={10}
-                dotColor="inherit:darker(0.3)"
-                dotBorderWidth={2}
-                dotBorderColor="#ffffff"
-                enableDotLabel={true}
-                dotLabel="y"
-                dotLabelYOffset={-12}
-                animate={true}
-                motionStiffness={90}
-                motionDamping={15}
-                legends={[
-                    {
-                        "anchor": "bottom-right",
-                        "direction": "column",
-                        "justify": false,
-                        "translateX": 100,
-                        "translateY": 0,
-                        "itemsSpacing": 0,
-                        "itemDirection": "left-to-right",
-                        "itemWidth": 80,
-                        "itemHeight": 20,
-                        "itemOpacity": 0.75,
-                        "symbolSize": 12,
-                        "symbolShape": "circle",
-                        "symbolBorderColor": "rgba(0, 0, 0, .5)",
-                        "effects": [
-                            {
-                                "on": "hover",
-                                "style": {
-                                    "itemBackground": "rgba(0, 0, 0, .03)",
-                                    "itemOpacity": 1
-                                }
-                            }
-                        ]
-                    }
-                ]}
-            />
+            <Gross
+                filmID={match.params.id}
+                from={daysAgoISO(300)}
+                to={today.toISOString()}
+            ></Gross>
         </div>
     );
 };
